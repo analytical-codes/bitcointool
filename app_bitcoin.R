@@ -2,7 +2,7 @@
 # Rpub hosts this web app:
 
 # Authors:
-# hamid
+# Autho1
 # Author2
 # Author3
 # Author4
