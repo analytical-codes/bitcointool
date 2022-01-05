@@ -2,6 +2,9 @@
 
 
 ######################################################
+# this is the main function that caluculates the probability of price movement in the next day
+# within this function we used some other functions for data preparation, the explanation of 
+# other functions are provided after this main function.
 prob_cal<-function(entry,style){
   
   require(pacman)
@@ -13,9 +16,13 @@ prob_cal<-function(entry,style){
   # library(magrittr)
   # library(TTR)
   
+  # here we enter the developed model from Github
   result_model <-readRDS(url("https://raw.githubusercontent.com/analytical-codes/bitcointool/main/ct-model.rds","rb"))
   # result_model <- readRDS("ct-model.rds")
   
+  # Here are all the variables used for data preparation
+  # we entered more than 6 variables that the final decision tree used, because of the requirements
+  # of the R package, however eventually the decision treee just used the 6 variables
   vars=c("BTC_USD_close_diff", "dollar2yuan_Open", "dji_close_sma3_diff", 
          "BTC_USD_Open_ema5", "stock_Adjusted")
   extra_cat=c("gold_open_move_1", "BTC_USD_close_rsi_move_0", "BTC_USD_Open_ema5_move_0", "BTC_USD_Close_sma3_move_0")
@@ -35,6 +42,7 @@ prob_cal<-function(entry,style){
   error_cat<-""
   error_message<-""
   
+  # if we have manual data entry this section will be operated and does the data preparation
   if(style=="manual"){
     error_empty_m<-entry$error_empty_m
     if(error_empty_m=="NO"){
@@ -54,7 +62,7 @@ prob_cal<-function(entry,style){
   
   
   
-  # the rest will run only if the err_check=="NO"
+  # if we have table data entry "i.e. CSV" this section will be operated and does the data preparation
   if(style=="automated"){
     file1<-entry
     if(nrow(file1) %in% apply(file1, 2,function(x) sum(is.na(x)))|
@@ -63,7 +71,8 @@ prob_cal<-function(entry,style){
       error_message="Error: at leaset one of you columns is entirely empty!"
     }
 
-    # the rest will run only if the err_check=="NO"
+    # In here, we need to produce all calculated variables "i.e. diff, sma3, and move"
+    # please study the paper for provided explainations
       if(err_check=="NO"){
       file1 <- entry
       if (nrow(file1)==0){error_empty<- c("  Your file is empty  ")
@@ -80,6 +89,8 @@ prob_cal<-function(entry,style){
       file1[,c("BTC_USD_open_move")] <- c(file1[,c("BTC_USD_open_move")])
       file1[,c("BTC_USD_open_move")]=as.factor(ifelse(file1[,c("BTC_USD_open_move")]== 1,"down", "up"))
 
+      # if there is no error in the above sections of data entry and data preparation
+      # the following section calculates the prediction
       for(i in extra_cat){
         file1%<>%mutate(!!as.name(i):= as.factor(1))}
       for(i in extra_num){
@@ -116,7 +127,9 @@ prob_cal<-function(entry,style){
   }
   
 }
-
+# this section is for changing the format of manual data entry from shiny-friendly to
+# a friendly version for the packages that do prediction
+# it calculates the 
 manual2df<-function(parameters){
   file1 <- read.csv("https://raw.githubusercontent.com/analytical-codes/bitcointool/main/template.csv")
   
@@ -140,7 +153,9 @@ manual2df<-function(parameters){
 }
 
 
-# the next function is for interpolating a dataframe of time series
+# the next function is for interpolating a dataframe as the time series. In case if it is needed
+# this packeg could interpolate indipendent variables
+
 ts_interpolate<-function(df,method="nocb"){
   NA_Col_Rate <- col_missing_function(df)
   NA_Col_Rate$varname <- rownames(NA_Col_Rate)
@@ -166,7 +181,8 @@ col_missing_function <- function(input_data){
 }
 
 
-# move function
+# move function, this function calculates the movement of price
+
 func_move<-function(data_in){
   data_in[data_in<0]<-0 
   data_in[data_in>0]<-1 
