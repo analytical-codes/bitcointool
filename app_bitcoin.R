@@ -2,7 +2,7 @@
 # Rpub hosts this web app:
 
 # Authors:
-# Autho 100
+# Author1
 # Author2
 # Author3
 # Author4
@@ -10,7 +10,8 @@
 
 #_________________________________________________________________________
 ############ Load Packages and User-Defined Functions into R#############
-
+# here we import the functions that we used in this tool. the explanation of functions 
+# are provided in the function files.
 source("app_bitcoin_functions.R") # A File Contains Non Standard/packaged Functions
 require(pacman)
 pacman::p_load(shinydashboard,shiny,htmltools,dplyr, shinycssloaders,rmarkdown)
@@ -31,6 +32,12 @@ ui <- dashboardPage(skin="green",
                   titleWidth = 500),
   
   # App Pages as shown on the SideBar
+  # This section shows the pages we have in this tool. The Home page will have a YouTube file
+  # to explain this tool further. The About Us, section is hided due to anonymity before 
+  # acceptance of the paper
+  # menuItem here refers to the different pages of the shiny tool
+  # within each page we have several other function for data entry and data preparation that 
+  # are explained in the app_bitcoin_functions.R
   dashboardSidebar(width = 250,
                    sidebarMenu(
                      menuItem(HTML("<font size = \"5px\">  Home </font>"), tabName = "home", icon = icon("home")),
@@ -90,7 +97,9 @@ ui <- dashboardPage(skin="green",
                                                    </p></br>")))))},
       
       
-      # Manual Entry Page
+      # Manual Entry Page, here the user can develop the variables and enter manually into the tool
+      # the variables are "BTC_USD_close_diff", "dollar2yuan_Open","stock_Adjusted",
+      # "dji_close_sma3_diff", and "BTC_USD_Open_ema5"
       tabItem(tabName = "manual",
               HTML("<p class = \"app\">   
                    You must provide all the values to see the results! Check 
@@ -120,18 +129,22 @@ ui <- dashboardPage(skin="green",
               )
               # end of fluidRow
               ,
-              # two conditions for showing the Run button: inputing file & not clicking on the Run button
-              
+              # two conditions for showing the Run button: input file & not clicking on the Run button
+              # here we assign an executive function to the run button, it executes and do
+              # the prediction after pressing the run button in the tool
               tags$head(
                 tags$style(HTML('#runit_m{background-color:#4682b4}'))
               ),
               actionButton("runit_m",h2("Run"), style='padding:24px; font-size:80%'),
+              # calculation is activated after clicking the "input.runit_m" button
               conditionalPanel(
                 condition = "input.runit_m",
                 verbatimTextOutput("result_m")
               ),
 
               br(),
+              # the results will be shown if both data entry button !input.runit_m", and "output.button"
+              # are clicking consecutively. Here "_m" refers to the manual entry page
               conditionalPanel(
                 condition = "output.button && !input.runit_m",
                 h1("Loading...")
@@ -146,7 +159,7 @@ ui <- dashboardPage(skin="green",
               
               br(),
               
-              # the download button runs after calculation of survival ends
+              # the download button runs after calculation ends
               conditionalPanel(condition = "input.runit_m",
                  br(),
                  br(),
@@ -155,7 +168,7 @@ ui <- dashboardPage(skin="green",
               )
               
               ),# end of manual
-      
+      # here we input the CSV file into the tool and then assign an executive button in the GUI
       tabItem(tabName = "table",
               HTML("<h4> To find a template file that contains the data required for the prediction,  
     click <a href=\"https://github.com/analytical-codes/bitcointool/blob/main/datasample.csv\"> here. </a> 
@@ -175,6 +188,9 @@ ui <- dashboardPage(skin="green",
                 #
               ),
               # two conditions for showing the Run button: inputing file & not clicking on the Run button
+              # here the executive function is assigned to the run button of the GUI
+              # the results will be shown if both data entry button !input.runit", and "output.button"
+              # are clicking consecutively
               conditionalPanel(
                 condition = "output.button && !input.runit",
                 tags$head(
@@ -199,7 +215,8 @@ ui <- dashboardPage(skin="green",
               )
               ), # For automated (sidebar_csv) Tab Items
       
-      # Code
+      # Here the user can be directed to the codes of the tool to be able download and use it
+      # in his/her PC
       tabItem(tabName = "codes",
               HTML("<h2> <b>Repository of the Source Codes</b></h2>"), 
               HTML("<p class = \"app\">  We have created an open repository that contains all the 
@@ -210,6 +227,7 @@ ui <- dashboardPage(skin="green",
       
       
       # About Us Page
+      # Here we put several section for introducing theauthors
       tabItem(tabName = "about_us",
               div(),
               div(style="clear: left;",
@@ -272,6 +290,8 @@ server <- function(input, output,session) {
     if(!is.null(file1)){parameters$data_base<-read.csv(file=file1$datapath, sep=',', header = TRUE, stringsAsFactors = FALSE)}
     
     # manual entry
+    # Here the variables of the manual entry are assigned to an object named "parameter" later in the 
+    # function files, this parameter is used as the data input for prediction
     {
       parameters$dollar2yuan_Open<-input$dollar2yuan_Open
       parameters$stock_Adjusted<-input$stock_Adjusted
@@ -284,27 +304,29 @@ server <- function(input, output,session) {
   
   observeEvent(input$runit, {
     observe({
-      
+      # here the table entry file is assigned to the inFile object, later it will be used 
+      # as the input for prediction
       inFile <- input$file
       
       req(inFile)
-      # outcomes <- prob_cal(parameters$data_base)
+      # here the outcomes of the "table data entry" is assigned to the "outcome" object
+      # we render the results on the GUI
       outcomes <- prob_cal(parameters$data_base,style="automated")
       if(outcomes$err_check=="NO"){
         output$result<-renderPrint({outcomes$prob_cal})
       }else{output$result<-renderPrint(outcomes$error_message)}
       
-      
+
       output$error_emptycsv<-renderText({outcomes$threshold})
       output$note<-renderText(c("Refresh the tool for new calculations"))
       
     })
     
   })
-  #outcomes$survival_Probability output$error_no  output$error_vars output$error_range output$error_cat
-  #output$note
+
   observeEvent(input$runit_m, {
-    
+    # here the outcomes of the "manual entry" is assigned to the "outcome" object
+    # we render the results on the GUI
     outcomes_m <- prob_cal(manual2df(parameters),style="manual")
     
     if(outcomes_m$err_check=="NO"){
